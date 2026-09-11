@@ -45,7 +45,7 @@
     outline: none; border-color: var(--lime); background: #fff;
     box-shadow: 0 0 0 3px rgba(169, 201, 68, .35);
   }
-  textarea { resize: none; overflow: hidden; display: block; }
+  textarea { resize: none; overflow: hidden; display: block; min-height: 30px; }
   input::placeholder, textarea::placeholder { color: var(--ink-3); text-transform: none; }
   .num { text-align: right; font-variant-numeric: tabular-nums; }
   .up { text-transform: uppercase; }
@@ -548,7 +548,7 @@
     return '$ ' + new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
   }
   function parseNum(v) { return parseFloat(String(v).replace(/[^0-9.\-]/g, '')) || 0; }
-  function autosize(t) { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }
+  function autosize(t) { t.style.height = 'auto'; if (t.scrollHeight > 0) t.style.height = t.scrollHeight + 'px'; }
 
   function addLine(data, focus) {
     data = data || {};
@@ -668,8 +668,8 @@
     PROFILE_IDS.forEach(id => data.fields[id] = prev.fields[id]); // se conservan logo, quien elabora, condiciones, contacto e IVA
     data.fields['inv-no'] = nextNumber();
     data.fields['inv-date'] = new Date().toISOString().slice(0, 10);
-    fillEditor(data);
     showEditor();
+    fillEditor(data);
     $('cl-name').focus();
   }
 
@@ -677,8 +677,8 @@
     const rec = readList().find(r => r.id === id);
     if (!rec) return;
     currentId = id; try { localStorage.setItem(CUR_KEY, id); } catch (e) {}
-    fillEditor(rec.data);
     showEditor();
+    fillEditor(rec.data);
   }
 
   function duplicateQuote(id) {
@@ -688,8 +688,8 @@
     currentId = null; try { localStorage.removeItem(CUR_KEY); } catch (e) {}
     data.fields['inv-no'] = nextNumber();
     data.fields['inv-date'] = new Date().toISOString().slice(0, 10);
-    fillEditor(data);
     showEditor();
+    fillEditor(data);
     save();
   }
 
@@ -751,7 +751,7 @@
   }
 
   function showDash() { renderDash(); document.body.classList.add('view-dash'); window.scrollTo(0, 0); }
-  function showEditor() { document.body.classList.remove('view-dash'); window.scrollTo(0, 0); }
+  function showEditor() { document.body.classList.remove('view-dash'); window.scrollTo(0, 0); document.querySelectorAll('.sheet textarea').forEach(autosize); }
 
   $('dash').addEventListener('click', (e) => {
     const b = e.target.closest('[data-open],[data-dup],[data-del]');
