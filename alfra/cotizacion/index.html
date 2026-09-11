@@ -235,6 +235,15 @@
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
 
+  .print-hint {
+    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 50;
+    max-width: 560px; width: calc(100% - 32px); background: var(--navy); color: #fff;
+    padding: 12px 40px 12px 14px; border-radius: 6px; font-size: 13px; line-height: 1.4; box-shadow: var(--shadow);
+  }
+  .print-hint b { color: var(--lime); }
+  .print-hint button { position: absolute; right: 8px; top: 8px; background: none; border: 0; color: #fff; font-size: 13px; padding: 4px; }
+  @media print { .print-hint { display: none !important; } }
+
   /* ---------- Mis cotizaciones ---------- */
   .dash { max-width: 850px; margin: 24px auto 0; display: none; }
   body.view-dash .dash { display: block; }
@@ -373,7 +382,7 @@
 <div class="toolbar">
   <button class="btn" id="btn-list" type="button">&larr; Mis cotizaciones</button>
   <button class="btn primary" id="btn-add" type="button">+ Agregar línea</button>
-  <button class="btn lime" id="btn-print" type="button">Imprimir / Guardar PDF</button>
+  <button class="btn lime" id="btn-print" type="button">Descargar PDF</button>
   <span class="status" id="pages"></span><span class="status" id="status"></span>
   <span class="spacer"></span>
   <button class="btn quiet" id="btn-clear" type="button">Nueva cotización</button>
@@ -944,7 +953,21 @@
     }, 250);
   }
   window.addEventListener('beforeprint', buildPrint);
-  $('btn-print').addEventListener('click', () => window.print());
+  function showPrintHint() {
+    let h = $('print-hint');
+    if (!h) {
+      h = document.createElement('div'); h.id = 'print-hint'; h.className = 'print-hint';
+      const mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+      h.innerHTML = mac
+        ? '<b>Para guardar el PDF:</b> en la ventana de impresión, abajo a la izquierda pulsa <b>PDF</b> y elige <b>Guardar como PDF</b>. (Si usas Chrome: en "Destino" elige "Guardar como PDF".)'
+        : '<b>Para guardar el PDF:</b> en la ventana de impresión, en <b>Destino</b> o <b>Impresora</b> elige <b>Guardar como PDF</b> / <b>Microsoft Print to PDF</b> y pulsa Guardar.';
+      h.innerHTML += '<button type="button" aria-label="Cerrar">&#x2715;</button>';
+      h.querySelector('button').addEventListener('click', () => h.remove());
+      document.body.appendChild(h);
+    }
+    setTimeout(() => { if (h.parentNode) h.remove(); }, 20000);
+  }
+  $('btn-print').addEventListener('click', () => { showPrintHint(); setTimeout(() => window.print(), 150); });
   $('btn-clear').addEventListener('click', () => { save(); startNew(); });
 
   window.addEventListener('load', () => document.querySelectorAll('textarea').forEach(autosize));
