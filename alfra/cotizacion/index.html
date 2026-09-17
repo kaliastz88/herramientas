@@ -144,7 +144,7 @@
   /* Tabla */
   .lines-wrap { overflow-x: auto; margin-right: -38px; padding-right: 4px; }
   table { border-collapse: separate; border-spacing: 0; width: 774px; margin-top: 8px; table-layout: fixed; }
-  col.c-idx { width: 58px; } col.c-qty { width: 74px; } col.c-price { width: 122px; } col.c-tot { width: 140px; } col.c-del { width: 34px; }
+  col.c-idx { width: 58px; } col.c-qty { width: 74px; } col.c-price { width: 122px; } col.c-tot { width: 140px; } col.c-del { width: 78px; }
   input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   thead th {
@@ -154,7 +154,7 @@
   thead th:first-child { border-radius: 6px 0 0 6px; padding-left: 12px; }
   thead th.total { border-radius: 0 6px 6px 0; text-align: center; }
   thead th.center { text-align: center; }
-  thead th.del-h { background: transparent; width: 34px; }
+  thead th.del-h { background: transparent; width: 78px; }
   thead th.spacer-h { background: transparent; height: 18px; padding: 0; }
   /* Caja de líneas con borde azul */
   tbody td { vertical-align: top; padding: 8px 8px; background: rgba(255,255,255,.85); }
@@ -170,7 +170,11 @@
   tbody td.tot input::placeholder { color: rgba(255,255,255,.5); }
   tbody td.tot input:hover { border-color: rgba(255,255,255,.4); }
   tbody td.tot input:focus { background: rgba(255,255,255,.14); border-color: var(--lime); box-shadow: none; }
-  tbody td.del-td { width: 34px; background: transparent; padding: 10px 0 0 6px; }
+  tbody td.del-td { width: 78px; background: transparent; padding: 10px 0 0 4px; white-space: nowrap; font-size: 0; }
+  tbody td.del-td button { font-size: 12px; }
+  .mv { background: none; border: 0; color: var(--ink-3); width: 18px; height: 26px; border-radius: 4px; font-size: 10px; padding: 0; vertical-align: top; }
+  .mv:hover { color: var(--navy); background: var(--field); }
+  .mv:disabled { opacity: .25; cursor: default; background: none; }
   tbody tr td.idx { border-left: 1px solid var(--navy); }
   tbody tr:first-child td { border-top: 1px solid var(--navy); }
   tbody tr:first-child td.idx { border-top-left-radius: 6px; }
@@ -192,7 +196,7 @@
   tfoot td.del-td { background: transparent; }
   .del {
     background: none; border: 0; color: var(--ink-3); width: 26px; height: 26px; border-radius: 4px;
-    display: grid; place-items: center;
+    display: inline-grid; place-items: center; width: 22px; vertical-align: top;
   }
   .del:hover { color: var(--danger); background: rgba(180,72,59,.1); }
   .add-row { margin-top: 10px; }
@@ -289,6 +293,8 @@
 
   /* ---------- Vista de impresión paginada ---------- */
   #print-root { position: fixed; left: 0; top: 0; width: 8.5in; height: 0; overflow: hidden; visibility: hidden; pointer-events: none; }
+  #print-root.rendering { position: absolute; left: -20000px; top: 0; height: auto; overflow: visible; visibility: visible; }
+  .btn.lime.busy { opacity: .7; pointer-events: none; }
   .page {
     position: relative; width: 8.5in; height: 11in; overflow: hidden;
     display: flex; flex-direction: column;
@@ -338,6 +344,7 @@
   .pintro .ttl { font-weight: 700; font-size: 13.5px; }
   .pintro .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; margin-top: 4px; }
   .pintro .cols .ttl { text-align: center; }
+  .pintro .left { text-align: left; }
   .ptable { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; margin-top: 6px; }
   .ptable thead th { background: var(--navy); color: #fff; font-weight: 700; font-size: 12px; white-space: nowrap; text-transform: uppercase; height: 34px; padding: 0 8px; text-align: left; vertical-align: middle; }
   .ptable thead th:first-child { border-radius: 6px 0 0 6px; padding-left: 12px; }
@@ -379,10 +386,13 @@
 
 </head>
 <body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <div class="toolbar">
   <button class="btn" id="btn-list" type="button">&larr; Mis cotizaciones</button>
   <button class="btn primary" id="btn-add" type="button">+ Agregar línea</button>
-  <button class="btn lime" id="btn-print" type="button">Descargar PDF</button>
+  <button class="btn lime" id="btn-pdf" type="button">Descargar PDF</button>
   <span class="status" id="pages"></span><span class="status" id="status"></span>
   <span class="spacer"></span>
   <button class="btn quiet" id="btn-clear" type="button">Nueva cotización</button>
@@ -568,7 +578,7 @@
       '<td class="qty"><input class="num q" type="number" min="0" step="any" placeholder="1" aria-label="Cantidad"></td>' +
       '<td class="price"><input class="num pr" type="text" inputmode="decimal" placeholder="$ 0.00" aria-label="Valor unitario"></td>' +
       '<td class="tot"><span class="t">$ 0.00</span></td>' +
-      '<td class="del-td"><button class="del" type="button" title="Eliminar línea" aria-label="Eliminar línea">&#x2715;</button></td>';
+      '<td class="del-td"><button class="mv up" type="button" title="Subir línea" aria-label="Subir línea">&#9650;</button><button class="mv down" type="button" title="Bajar línea" aria-label="Bajar línea">&#9660;</button><button class="del" type="button" title="Eliminar línea" aria-label="Eliminar línea">&#x2715;</button></td>';
     const desc = tr.querySelector('.d'), q = tr.querySelector('.q'), t = tr.querySelector('.pr');
     desc.value = data.desc || ''; q.value = data.qty ?? '';
     let price = data.price;
@@ -582,6 +592,8 @@
       recalc();
     });
     t.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addLine({}, true); } });
+    tr.querySelector('.up').addEventListener('click', () => { if (tr.previousElementSibling) { body.insertBefore(tr, tr.previousElementSibling); recalc(); } });
+    tr.querySelector('.down').addEventListener('click', () => { if (tr.nextElementSibling) { body.insertBefore(tr.nextElementSibling, tr); recalc(); } });
     body.appendChild(tr);
     autosize(desc);
     if (focus) desc.focus();
@@ -602,6 +614,8 @@
       tr.querySelector('.t').textContent = fmt(amt);
       sub += amt;
       tr.querySelector('.idx').textContent = i + 1;
+      tr.querySelector('.up').disabled = i === 0;
+      tr.querySelector('.down').disabled = i === body.children.length - 1;
     });
     const rate = parseFloat($('tax-rate').value) || 0;
     const tax = sub * rate / 100;
@@ -848,21 +862,13 @@
   const LOGO = () => $('logo-img').getAttribute('src');
 
   function headerHTML() {
-    let h = `<div class="phead"><div class="t">${esc(v('doc-title'))}</div><img src="${LOGO()}" alt=""></div>` +
+    return `<div class="phead"><div class="t">${esc(v('doc-title'))}</div><img src="${LOGO()}" alt=""></div>` +
       `<div class="pident-wrap"><div class="pident"><div><span class="lbl">Nº:</span><span class="val">${esc(v('inv-no'))}</span></div>` +
       `<div><span class="lbl">Fecha:</span><span class="val date">${esc(fmtDate(v('inv-date')))}</span></div>` +
       `<div class="term"><span class="lbl">Plazo de pago:</span><span class="val">${esc(termLabel(v('pay-term')))}</span></div></div>` +
       (v('rep-name').trim() ? `<div class="prep"><p class="peyebrow">Elaborado por:</p><div class="n">${esc(v('rep-name'))}</div>` +
         (v('rep-role').trim() ? `<div>${esc(v('rep-role'))}</div>` : '') + (v('rep-contact').trim() ? `<div>${esc(v('rep-contact'))}</div>` : '') + `</div>` : '') + `</div>` +
       `<div><p class="peyebrow">Cliente:</p><div class="pclient">${esc(v('cl-name'))}\n${esc(v('cl-addr'))}</div></div>`;
-    const intro = [];
-    if (v('svc-title').trim()) intro.push(`<div class="ttl">${esc(v('svc-title'))}</div>`);
-    if (v('svc-desc').trim()) intro.push(`<div>${esc(v('svc-desc'))}</div>`);
-    const c1 = v('feat-title').trim() || v('feat-list').trim(), c2 = v('extra-title').trim() || v('extra-desc').trim();
-    if (c1 || c2) intro.push(`<div class="cols"><div><div class="ttl">${esc(v('feat-title'))}</div><div>${esc(v('feat-list'))}</div></div>` +
-      `<div><div class="ttl">${esc(v('extra-title'))}</div><div>${esc(v('extra-desc'))}</div></div></div>`);
-    if (intro.length) h += `<div class="pintro">${intro.join('')}</div>`;
-    return h;
   }
   function contHeaderHTML() {
     return `<div class="phead-cont"><div><div class="t">${esc(v('doc-title'))}</div>` +
@@ -873,9 +879,11 @@
     return '<colgroup><col style="width:54px"><col><col style="width:70px"><col style="width:132px"><col style="width:126px"></colgroup>' +
       '<thead><tr><th>Línea</th><th class="center">Descripción</th><th class="center">Cantidad</th><th class="center">Valor unitario</th><th class="total">Total</th></tr><tr><th class="sp" colspan="5"></th></tr></thead><tbody></tbody>';
   }
-  function rowHTML(l, i) {
+  function rowHTML(l, i, desc, showAmounts) {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td class="idx">${i + 1}</td><td class="desc">${esc(l.desc)}</td><td class="qty">${esc(l.qty)}</td><td class="price">${l.price ? fmt(l.price) : ''}</td><td class="tot">${l.total ? fmt(l.total) : ''}</td>`;
+    tr.innerHTML = `<td class="idx">${showAmounts ? i + 1 : ''}</td><td class="desc"></td><td class="qty">${showAmounts ? esc(l.qty) : ''}</td>` +
+      `<td class="price">${showAmounts && l.price ? fmt(l.price) : ''}</td><td class="tot">${showAmounts && l.total ? fmt(l.total) : ''}</td>`;
+    tr.querySelector('.desc').textContent = desc;
     return tr;
   }
   function totalsHTML(sub, rate, tax, firstOnPage) {
@@ -889,55 +897,138 @@
     const cell = (k, val) => `<div class="cell"><b>${esc(v(k))}</b><span>${esc(v(val))}</span></div>`;
     return `<h2>Condiciones comerciales</h2><div class="grid">${cell('c1k','c1v')}${cell('c2k','c2v')}${cell('c3k','c3v')}${cell('c4k','c4v')}</div>`;
   }
+
+  // Divide un texto en el mayor prefijo (por palabras) que cumpla `ok(prefijo)`; devuelve [prefijo, resto]
+  function splitText(text, setter, ok) {
+    const tokens = text.split(/(\s+)/);
+    let lo = 0, hi = tokens.length;
+    while (lo < hi) {
+      const mid = Math.ceil((lo + hi) / 2);
+      setter(tokens.slice(0, mid).join(''));
+      if (ok()) lo = mid; else hi = mid - 1;
+    }
+    if (lo === 0) lo = Math.min(2, tokens.length); // nunca dejar una parte vacía
+    return [tokens.slice(0, lo).join('').trimEnd(), tokens.slice(lo).join('').trimStart()];
+  }
+
   function buildPrint() {
     const root = $('print-root'); root.innerHTML = '';
     const pages = [];
+    const CONT = '<div class="pcontinues">Continúa en la siguiente página</div>';
     function newPage(cont) {
       const pg = document.createElement('section'); pg.className = 'page';
       pg.innerHTML = '<div class="corner-top"></div><div class="pcontent"></div><div class="pconditions"></div>' +
         `<div class="pbottom"><span class="pnum"></span><b>Teléfono:</b> ${esc(v('biz-phone'))}<span class="sep"></span><b>Email:</b> ${esc(v('biz-email'))}</div>`;
       root.appendChild(pg); pages.push(pg);
-      const c = pg.querySelector('.pcontent');
-      c.innerHTML = cont ? contHeaderHTML() : headerHTML();
-      const tbl = document.createElement('table'); tbl.className = 'ptable'; tbl.innerHTML = tableHTML();
-      c.appendChild(tbl);
+      pg.querySelector('.pcontent').innerHTML = cont ? contHeaderHTML() : headerHTML();
+      pg._empty = true; // sin bloques de contenido todavía (solo encabezado)
       return pg;
     }
-    const fits = (pg) => pg.querySelector('.pcontent').offsetHeight + pg.querySelector('.pconditions').offsetHeight + pg.querySelector('.pbottom').offsetHeight <= PAGE_H;
+    const content = (pg) => pg.querySelector('.pcontent');
+    const used = (pg) => content(pg).offsetHeight + pg.querySelector('.pconditions').offsetHeight + pg.querySelector('.pbottom').offsetHeight;
+    const fits = (pg) => used(pg) <= PAGE_H - 24; // deja espacio para el aviso de "continúa"
+    const MIN_SPLIT = 150; // si quedan al menos estos px, un texto largo se divide en la hoja actual en vez de saltar completo
+    const markCont = (pg) => content(pg).insertAdjacentHTML('beforeend', CONT);
 
-    const lines = lineData();
-    let pg = newPage(false), tbody = pg.querySelector('tbody');
-    lines.forEach((l, i) => {
-      const tr = rowHTML(l, i); tbody.appendChild(tr);
-      if (!fits(pg) && tbody.children.length > 1) {
-        tr.remove();
-        pg.querySelector('.pcontent').insertAdjacentHTML('beforeend', '<div class="pcontinues">Continúa en la siguiente página</div>');
-        pg = newPage(true); tbody = pg.querySelector('tbody'); tbody.appendChild(tr);
+    let pg = newPage(false);
+
+    // ---- Bloques de texto de la introducción (se reparten entre hojas y se dividen si hace falta) ----
+    let intro = null;
+    function introBox(p) {
+      let box = content(p).querySelector('.pintro');
+      if (!box) { box = document.createElement('div'); box.className = 'pintro'; content(p).appendChild(box); }
+      return box;
+    }
+    function placeText(cls, text) {
+      let rest = text;
+      while (rest.trim()) {
+        const room = PAGE_H - 24 - used(pg);
+        const el = document.createElement('div'); if (cls) el.className = cls;
+        el.textContent = rest; introBox(pg).appendChild(el);
+        if (fits(pg)) { if (cls !== 'ttl') pg._empty = false; return; }
+        if (!pg._empty && (cls === 'ttl' || room < MIN_SPLIT)) {
+          el.remove();
+          const box = introBox(pg), prev = box.lastElementChild;
+          let carry = null;
+          if (cls !== 'ttl' && prev && prev.classList.contains('ttl')) { carry = prev; prev.remove(); }
+          if (!box.children.length) box.remove();
+          markCont(pg); pg = newPage(true);
+          if (carry) introBox(pg).appendChild(carry);
+          continue;
+        }
+        // La hoja está vacía y aun así no cabe: dividir el texto
+        const [head, tail] = splitText(rest, (t) => { el.textContent = t; }, () => fits(pg));
+        el.textContent = head; pg._empty = false; rest = tail;
+        if (rest.trim()) { markCont(pg); pg = newPage(true); }
       }
+    }
+    if (v('svc-title').trim()) placeText('ttl', v('svc-title'));
+    if (v('svc-desc').trim()) placeText('', v('svc-desc'));
+    const c1 = v('feat-title').trim() || v('feat-list').trim(), c2 = v('extra-title').trim() || v('extra-desc').trim();
+    if (c1 || c2) {
+      // Intento 1: las dos columnas juntas en la hoja actual
+      const cols = document.createElement('div'); cols.className = 'cols';
+      cols.innerHTML = `<div><div class="ttl">${esc(v('feat-title'))}</div><div>${esc(v('feat-list'))}</div></div><div><div class="ttl">${esc(v('extra-title'))}</div><div>${esc(v('extra-desc'))}</div></div>`;
+      introBox(pg).appendChild(cols);
+      if (fits(pg)) pg._empty = false;
+      else {
+        // Intento 2: a una columna, texto por texto (se reparte y divide entre hojas)
+        cols.remove(); if (!introBox(pg).children.length) introBox(pg).remove();
+        if (v('feat-title').trim()) placeText('ttl', v('feat-title'));
+        if (v('feat-list').trim()) placeText('left', v('feat-list'));
+        if (v('extra-title').trim()) placeText('ttl', v('extra-title'));
+        if (v('extra-desc').trim()) placeText('left', v('extra-desc'));
+      }
+    }
+
+    // ---- Tabla de líneas ----
+    function ensureTable(p) {
+      let t = content(p).querySelector('.ptable');
+      if (!t) { t = document.createElement('table'); t.className = 'ptable'; t.innerHTML = tableHTML(); content(p).appendChild(t); }
+      return t;
+    }
+    const lines = lineData();
+    ensureTable(pg);
+    if (!fits(pg)) { content(pg).querySelector('.ptable').remove(); markCont(pg); pg = newPage(true); ensureTable(pg); }
+    lines.forEach((l, i) => {
+      let rest = l.desc || '', first = true;
+      do {
+        const room = PAGE_H - 24 - used(pg);
+        const tbody = ensureTable(pg).querySelector('tbody');
+        const tr = rowHTML(l, i, rest, first); tbody.appendChild(tr);
+        if (fits(pg)) { pg._empty = false; rest = ''; break; }
+        if (room < MIN_SPLIT && (tbody.children.length > 1 || !pg._empty)) {
+          tr.remove();
+          if (!tbody.children.length) ensureTable(pg).remove(); // no dejar un encabezado de tabla huérfano
+          markCont(pg); pg = newPage(true); ensureTable(pg); continue;
+        }
+        // Única línea en una hoja vacía y no cabe: dividir la descripción
+        const cell = tr.querySelector('.desc');
+        const [head, tail] = splitText(rest, (t) => { cell.textContent = t; }, () => fits(pg));
+        cell.textContent = head + (tail.trim() ? ' …' : ''); pg._empty = false; rest = tail; first = false;
+        if (rest.trim()) { markCont(pg); pg = newPage(true); ensureTable(pg); }
+      } while (rest.trim());
     });
+
+    // ---- Totales y condiciones en la última hoja ----
     const sub = lines.reduce((a, l) => a + (parseFloat(l.total) || 0), 0);
     const rate = parseFloat(v('tax-rate')) || 0, tax = sub * rate / 100;
     let tf = totalsHTML(sub, rate, tax, false);
-    pg.querySelector('.ptable').appendChild(tf);
+    ensureTable(pg).appendChild(tf);
     if (!fits(pg)) {
-      tf.remove();
-      pg.querySelector('.pcontent').insertAdjacentHTML('beforeend', '<div class="pcontinues">Continúa en la siguiente página</div>');
-      pg = newPage(true); pg.querySelector('.ptable').classList.add('no-head');
-      pg.querySelector('.ptable').appendChild(totalsHTML(sub, rate, tax, true));
+      tf.remove(); markCont(pg); pg = newPage(true);
+      ensureTable(pg).classList.add('no-head'); ensureTable(pg).appendChild(totalsHTML(sub, rate, tax, true));
     }
     pg.querySelector('.pconditions').innerHTML = conditionsHTML();
     if (!fits(pg)) {
-      // Las condiciones no caben: se llevan los totales junto con ellas a la hoja siguiente
       pg.querySelector('.pconditions').innerHTML = '';
       const foot = pg.querySelector('tfoot');
       const tableHasRows = pg.querySelector('tbody') && pg.querySelector('tbody').children.length > 0;
       if (foot && tableHasRows) {
-        foot.remove();
-        pg.querySelector('.pcontent').insertAdjacentHTML('beforeend', '<div class="pcontinues">Continúa en la siguiente página</div>');
-        pg = newPage(true); pg.querySelector('.ptable').classList.add('no-head');
-        pg.querySelector('.ptable').appendChild(totalsHTML(sub, rate, tax, true));
+        foot.remove(); markCont(pg); pg = newPage(true);
+        ensureTable(pg).classList.add('no-head'); ensureTable(pg).appendChild(totalsHTML(sub, rate, tax, true));
       } else {
-        pg = newPage(true); pg.querySelector('.ptable').remove();
+        pg = newPage(true);
       }
       pg.querySelector('.pconditions').innerHTML = conditionsHTML();
     }
@@ -953,21 +1044,38 @@
     }, 250);
   }
   window.addEventListener('beforeprint', buildPrint);
-  function showPrintHint() {
-    let h = $('print-hint');
-    if (!h) {
-      h = document.createElement('div'); h.id = 'print-hint'; h.className = 'print-hint';
-      const mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
-      h.innerHTML = mac
-        ? '<b>Para guardar el PDF:</b> en la ventana de impresión, abajo a la izquierda pulsa <b>PDF</b> y elige <b>Guardar como PDF</b>. (Si usas Chrome: en "Destino" elige "Guardar como PDF".)'
-        : '<b>Para guardar el PDF:</b> en la ventana de impresión, en <b>Destino</b> o <b>Impresora</b> elige <b>Guardar como PDF</b> / <b>Microsoft Print to PDF</b> y pulsa Guardar.';
-      h.innerHTML += '<button type="button" aria-label="Cerrar">&#x2715;</button>';
-      h.querySelector('button').addEventListener('click', () => h.remove());
-      document.body.appendChild(h);
+  // ---------- PDF directo (sin ventana de impresión): hojas carta exactas ----------
+  async function downloadPdf() {
+    const btn = $('btn-pdf');
+    if (!window.html2canvas || !window.jspdf) {
+      alert('No se pudo cargar el generador de PDF. Revisa tu conexión a internet y recarga la página.');
+      return;
     }
-    setTimeout(() => { if (h.parentNode) h.remove(); }, 20000);
+    const label = btn.textContent; btn.textContent = 'Generando PDF…'; btn.classList.add('busy');
+    const root = $('print-root');
+    try {
+      save();
+      buildPrint();
+      root.classList.add('rendering');
+      await new Promise(r => setTimeout(r, 50));
+      const pages = root.querySelectorAll('.page');
+      const pdf = new window.jspdf.jsPDF({ unit: 'in', format: 'letter', orientation: 'portrait', compress: true });
+      for (let i = 0; i < pages.length; i++) {
+        const canvas = await window.html2canvas(pages[i], { scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true, windowWidth: 816 });
+        if (i > 0) pdf.addPage('letter', 'portrait');
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 8.5, 11, undefined, 'FAST');
+      }
+      const no = (v('inv-no') || 'cotizacion').replace(/[\\/:*?"<>|]+/g, '-');
+      const cl = (v('cl-name') || '').replace(/[\\/:*?"<>|]+/g, '-').trim();
+      pdf.save(`Cotizacion ${no}${cl ? ' - ' + cl : ''}.pdf`);
+    } catch (err) {
+      alert('No se pudo generar el PDF. Intenta de nuevo.');
+    } finally {
+      root.classList.remove('rendering');
+      btn.textContent = label; btn.classList.remove('busy');
+    }
   }
-  $('btn-print').addEventListener('click', () => { showPrintHint(); setTimeout(() => window.print(), 150); });
+  $('btn-pdf').addEventListener('click', downloadPdf);
   $('btn-clear').addEventListener('click', () => { save(); startNew(); });
 
   window.addEventListener('load', () => document.querySelectorAll('textarea').forEach(autosize));
