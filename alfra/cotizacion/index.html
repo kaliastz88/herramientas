@@ -73,6 +73,14 @@
   .btn.quiet { background: transparent; border-color: transparent; color: var(--ink-2); }
   .btn.quiet:hover { color: var(--danger); }
   .status { font-size: 12px; color: var(--ink-3); }
+  .status.warn { color: var(--danger); font-weight: 700; }
+  .btn .count { background: var(--lime); color: var(--navy); border-radius: 10px; padding: 0 7px; font-size: 11px; margin-left: 2px; }
+  .btn .count:empty { display: none; }
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 50; background: var(--navy); color: #fff; padding: 10px 16px; border-radius: 6px; font-size: 13px; box-shadow: var(--shadow); }
+  .toast b { color: var(--lime); }
+  .toast a { color: var(--lime); font-weight: 700; }
+  .toast button { background: none; border: 0; color: #fff; margin-left: 8px; padding: 0 4px; }
+  .toast-pdf { max-width: 90vw; }
   #pages { font-weight: 700; color: var(--navy); }
 
   /* Hoja: 850px = carta a 100 ppp, así las medidas coinciden 1:1 con el PDF original */
@@ -84,11 +92,11 @@
     display: grid;
   }
   .corner-top {
-    position: absolute; top: 0; left: 0; width: 16.47%; aspect-ratio: 140 / 115;
+    position: absolute; top: 0; left: 0; width: 16.47%; height: 115px; aspect-ratio: 140 / 115;
     background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIwAAABzCAYAAABKBOryAAADBUlEQVR42u3YsWoUQQDH4VmJXEhCDMZwCJIiKoTEQg6RdNGIFoIJWtgIQkAR7AQJ+Aix8hUEK7HxCay11dhoJaQIxC4IVmdlGd0pZnZn+P71sccNP77dvWbh2qNxqGQ725vh+cM7Tarrv/10s5qzOm5r51+ExfmNY8/wRE0/9un9W8mu/XX/TfWxTJ48/c9YqgpmZ3szTE0OkunyZf917b2Ey4tP/vuZaoKhS3pdqgmGLnl0qSYYuuTRpYpg6JJPlyqCoUs+XYoPhi55dSk+GLrk1aXoYOiSX5eig6FLfl2KDYYu3ehSbDB06UaXIoOhS3e6FBkMXbrTpbhg6NKtLsUFQ5dudSkqGLp0r0tRwdCle12KCYYu/dClmGDo0g9digiGLv3RpYhgUury/eA9XWoK5vG9G0l1OTzao0tNwWxdv5L0+j9+fqBLLcGsLJ0LVy9daIL1RpdeB/Py2YPk3zE3tUSXGoLJpcvSwm261BBMDl1CCOHs3FqVsQxnR0l06WUwOZ9dpgfDZmPlVXWxrC/vJju/3gWTS5e/OzOz2myN3oXh7Kj4Z5aLw7tJYwkhhAlvRiEMJk4168u7IYQQDo/2xr9+HxQVy/zMapgeDLOcW6+Cya3LceKEmVXv5H2/JfnfRTDF6WKFBEMXwdBFMHSxHgRDF8HQRTB0sY6DoYtg6CIYulgPgqGLYOgiGLpYx8HQRTB0EQxdrAfB0EUwdBEMXazjYOgiGLoIhi7Wg2DoIhi6CIYu1nEwdBEMXSxNMHQRDF0sTTB0EQxdLE0wdBEMXSxNMHQRDF0sTTB0EQxdLE0wdBEMXSxNMHQRDF0sTTB0EQxdLE0wdBEMXSxNMHSxqGDoYq2DoYtFBUMXax0MXSwqGLpY62DoYlHB0MVaB0MXiwqGLtY6GLpYVDB0sdbB0MWigqGLtQ6GLhYVDF2sdTB0sahg6GKtg6GLRQVDF2sdDF0sKhi6WOtg6GIxaz5+/jYWjLUOZjweOwWLf0syE4wJxgRjgjHBmAnGBGOCMcFYofsDIh7sw/U+V4EAAAAASUVORK5CYII=") top left / 100% 100% no-repeat; pointer-events: none;
   }
   .corner-bottom {
-    width: 100%; aspect-ratio: 850 / 78;
+    width: 100%; min-height: 78px; aspect-ratio: 850 / 78;
     background: url("data:image/png;base64,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") bottom left / 100% 100% no-repeat;
     display: flex; align-items: center; justify-content: center;
     padding: 0 100px; position: relative;
@@ -114,7 +122,7 @@
   .logo-box:hover { border-color: var(--line); }
   .logo-box img { width: 100%; height: 100%; object-fit: contain; display: block; }
   .logo-box span { display: none; }
-  .logo-box input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .logo-box input { position: absolute; top: 0; left: 0; right: 0; bottom: 0; opacity: 0; cursor: pointer; }
 
   .ident-wrap { display: grid; grid-template-columns: 1fr 300px; gap: 16px; align-items: start; }
   .rep { display: grid; gap: 3px; }
@@ -249,7 +257,16 @@
   @media print { .print-hint { display: none !important; } }
 
   /* ---------- Mis cotizaciones ---------- */
-  .dash { max-width: 850px; margin: 24px auto 0; display: none; }
+  .tabs { max-width: 850px; margin: 0 auto; display: flex; gap: 4px; align-items: center; padding-top: 10px; border-bottom: 2px solid var(--line); }
+  .tab { background: transparent; border: 0; padding: 10px 14px; font-weight: 700; color: var(--ink-2); border-bottom: 3px solid transparent; margin-bottom: -2px; font-size: 13.5px; }
+  .tab:hover { color: var(--navy); }
+  .tab.active { color: var(--navy); border-bottom-color: var(--lime); }
+  .tabs .count { background: var(--lime); color: var(--navy); border-radius: 10px; padding: 0 7px; font-size: 11px; margin-left: 2px; }
+  .tabs .count:empty { display: none; }
+  .tabs-note { margin-left: auto; font-size: 12px; color: var(--danger); font-weight: 700; }
+  .tabs-note:empty { margin-left: auto; }
+  .ver { font-size: 11px; color: var(--ink-3); padding-left: 10px; }
+  .dash { max-width: 850px; margin: 16px auto 0; display: none; }
   body.view-dash .dash { display: block; }
   body.view-dash .toolbar, body.view-dash .sheet { display: none; }
   .dash-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -289,7 +306,7 @@
   .dash-foot .links { display: flex; gap: 10px; }
   .dash-foot button { background: none; border: 0; color: var(--navy); font-size: 12px; font-weight: 700; padding: 0; text-decoration: underline; }
   .dash-total { font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; }
-  @media print { .dash { display: none !important; } }
+  @media print { .dash, .tabs { display: none !important; } }
 
   /* ---------- Vista de impresión paginada ---------- */
   #print-root { position: fixed; left: 0; top: 0; width: 8.5in; height: 0; overflow: hidden; visibility: hidden; pointer-events: none; }
@@ -303,7 +320,7 @@
     break-after: page; page-break-after: always;
   }
   .page:last-child { break-after: auto; page-break-after: auto; }
-  .page .corner-top { position: absolute; top: 0; left: 0; width: 16.47%; aspect-ratio: 140 / 115; background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIwAAABzCAYAAABKBOryAAADBUlEQVR42u3YsWoUQQDH4VmJXEhCDMZwCJIiKoTEQg6RdNGIFoIJWtgIQkAR7AQJ+Aix8hUEK7HxCay11dhoJaQIxC4IVmdlGd0pZnZn+P71sccNP77dvWbh2qNxqGQ725vh+cM7Tarrv/10s5qzOm5r51+ExfmNY8/wRE0/9un9W8mu/XX/TfWxTJ48/c9YqgpmZ3szTE0OkunyZf917b2Ey4tP/vuZaoKhS3pdqgmGLnl0qSYYuuTRpYpg6JJPlyqCoUs+XYoPhi55dSk+GLrk1aXoYOiSX5eig6FLfl2KDYYu3ehSbDB06UaXIoOhS3e6FBkMXbrTpbhg6NKtLsUFQ5dudSkqGLp0r0tRwdCle12KCYYu/dClmGDo0g9digiGLv3RpYhgUury/eA9XWoK5vG9G0l1OTzao0tNwWxdv5L0+j9+fqBLLcGsLJ0LVy9daIL1RpdeB/Py2YPk3zE3tUSXGoLJpcvSwm261BBMDl1CCOHs3FqVsQxnR0l06WUwOZ9dpgfDZmPlVXWxrC/vJju/3gWTS5e/OzOz2myN3oXh7Kj4Z5aLw7tJYwkhhAlvRiEMJk4168u7IYQQDo/2xr9+HxQVy/zMapgeDLOcW6+Cya3LceKEmVXv5H2/JfnfRTDF6WKFBEMXwdBFMHSxHgRDF8HQRTB0sY6DoYtg6CIYulgPgqGLYOgiGLpYx8HQRTB0EQxdrAfB0EUwdBEMXazjYOgiGLoIhi7Wg2DoIhi6CIYu1nEwdBEMXSxNMHQRDF0sTTB0EQxdLE0wdBEMXSxNMHQRDF0sTTB0EQxdLE0wdBEMXSxNMHQRDF0sTTB0EQxdLE0wdBEMXSxNMHSxqGDoYq2DoYtFBUMXax0MXSwqGLpY62DoYlHB0MVaB0MXiwqGLtY6GLpYVDB0sdbB0MWigqGLtQ6GLhYVDF2sdTB0sahg6GKtg6GLRQVDF2sdDF0sKhi6WOtg6GIxaz5+/jYWjLUOZjweOwWLf0syE4wJxgRjgjHBmAnGBGOCMcFYofsDIh7sw/U+V4EAAAAASUVORK5CYII=") top left / 100% 100% no-repeat; }
+  .page .corner-top { position: absolute; top: 0; left: 0; width: 134px; height: 110px; background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIwAAABzCAYAAABKBOryAAADBUlEQVR42u3YsWoUQQDH4VmJXEhCDMZwCJIiKoTEQg6RdNGIFoIJWtgIQkAR7AQJ+Aix8hUEK7HxCay11dhoJaQIxC4IVmdlGd0pZnZn+P71sccNP77dvWbh2qNxqGQ725vh+cM7Tarrv/10s5qzOm5r51+ExfmNY8/wRE0/9un9W8mu/XX/TfWxTJ48/c9YqgpmZ3szTE0OkunyZf917b2Ey4tP/vuZaoKhS3pdqgmGLnl0qSYYuuTRpYpg6JJPlyqCoUs+XYoPhi55dSk+GLrk1aXoYOiSX5eig6FLfl2KDYYu3ehSbDB06UaXIoOhS3e6FBkMXbrTpbhg6NKtLsUFQ5dudSkqGLp0r0tRwdCle12KCYYu/dClmGDo0g9digiGLv3RpYhgUury/eA9XWoK5vG9G0l1OTzao0tNwWxdv5L0+j9+fqBLLcGsLJ0LVy9daIL1RpdeB/Py2YPk3zE3tUSXGoLJpcvSwm261BBMDl1CCOHs3FqVsQxnR0l06WUwOZ9dpgfDZmPlVXWxrC/vJju/3gWTS5e/OzOz2myN3oXh7Kj4Z5aLw7tJYwkhhAlvRiEMJk4168u7IYQQDo/2xr9+HxQVy/zMapgeDLOcW6+Cya3LceKEmVXv5H2/JfnfRTDF6WKFBEMXwdBFMHSxHgRDF8HQRTB0sY6DoYtg6CIYulgPgqGLYOgiGLpYx8HQRTB0EQxdrAfB0EUwdBEMXazjYOgiGLoIhi7Wg2DoIhi6CIYu1nEwdBEMXSxNMHQRDF0sTTB0EQxdLE0wdBEMXSxNMHQRDF0sTTB0EQxdLE0wdBEMXSxNMHQRDF0sTTB0EQxdLE0wdBEMXSxNMHSxqGDoYq2DoYtFBUMXax0MXSwqGLpY62DoYlHB0MVaB0MXiwqGLtY6GLpYVDB0sdbB0MWigqGLtQ6GLhYVDF2sdTB0sahg6GKtg6GLRQVDF2sdDF0sKhi6WOtg6GIxaz5+/jYWjLUOZjweOwWLf0syE4wJxgRjgjHBmAnGBGOCMcFYofsDIh7sw/U+V4EAAAAASUVORK5CYII=") top left / 100% 100% no-repeat; }
   .pcontent { position: relative; padding: 26px 38px 0; display: grid; gap: 12px; align-content: start; }
   .pconditions { margin-top: auto; background: var(--lime); color: var(--navy); padding: 12px 12px 14px; text-align: center; }
   .pconditions:empty { display: none; }
@@ -313,7 +330,7 @@
   .pconditions .cell { display: grid; gap: 1px; text-transform: uppercase; font-size: 12.5px; }
   .pconditions .cell b { font-weight: 700; }
   .pbottom {
-    position: relative; width: 100%; aspect-ratio: 850 / 78; flex: none;
+    position: relative; width: 100%; height: 75px; flex: none;
     background: url("data:image/png;base64,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") bottom left / 100% 100% no-repeat;
     display: flex; align-items: center; justify-content: center; color: var(--navy); font-size: 14px; text-transform: uppercase;
   }
@@ -389,9 +406,15 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
+<nav class="tabs" aria-label="Secciones">
+  <button class="tab" id="tab-editor" type="button">Cotización</button>
+  <button class="tab" id="tab-list" type="button">Mis cotizaciones <span class="count" id="list-count"></span></button>
+  <span class="tabs-note" id="storage-note"></span>
+  <span class="ver" title="Versión del cotizador">v2026.09.29</span>
+</nav>
 <div class="toolbar">
-  <button class="btn" id="btn-list" type="button">&larr; Mis cotizaciones</button>
-  <button class="btn primary" id="btn-add" type="button">+ Agregar línea</button>
+  <button class="btn" id="btn-add" type="button">+ Agregar línea</button>
+  <button class="btn primary" id="btn-save" type="button">Guardar</button>
   <button class="btn lime" id="btn-pdf" type="button">Descargar PDF</button>
   <span class="status" id="pages"></span><span class="status" id="status"></span>
   <span class="spacer"></span>
@@ -662,7 +685,16 @@
     if (!rec) { rec = { id: currentId, status: 'pendiente', created: Date.now() }; list.unshift(rec); }
     rec.no = data.fields['inv-no']; rec.date = data.fields['inv-date']; rec.client = data.fields['cl-name'];
     rec.rep = data.fields['rep-name']; rec.term = parseInt(data.fields['pay-term'], 10) || 0; rec.total = grandTotal(data); rec.updated = Date.now(); rec.data = data;
-    $('status').textContent = writeList(list) ? 'Guardada en Mis cotizaciones' : 'No se pudo guardar en este navegador';
+    const ok = writeList(list);
+    $('status').textContent = ok ? 'Guardada en Mis cotizaciones' : 'Este navegador no permite guardar (modo privado o vista previa)';
+    $('status').classList.toggle('warn', !ok);
+    updateCount();
+    return ok;
+  }
+  function updateCount() { const n = readList().length; $('list-count').textContent = n ? String(n) : ''; }
+  function toast(html) {
+    const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = html; document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2600);
   }
 
   function fillEditor(data) {
@@ -693,6 +725,7 @@
     data.fields['inv-date'] = new Date().toISOString().slice(0, 10);
     showEditor();
     fillEditor(data);
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(snapshot())); } catch (e) {}
     $('cl-name').focus();
   }
 
@@ -702,6 +735,7 @@
     currentId = id; try { localStorage.setItem(CUR_KEY, id); } catch (e) {}
     showEditor();
     fillEditor(rec.data);
+    save();
   }
 
   function duplicateQuote(id) {
@@ -717,6 +751,7 @@
   }
 
   function deleteQuote(id) {
+    setTimeout(updateCount, 0);
     const rec = readList().find(r => r.id === id);
     if (!rec || !confirm(`¿Eliminar la cotización ${rec.no || ''} de ${rec.client || 'sin cliente'}? Esta acción no se puede deshacer.`)) return;
     writeList(readList().filter(r => r.id !== id));
@@ -773,8 +808,10 @@
     $('dash-summary').innerHTML = `${list.length === all ? all : list.length + ' de ' + all} ${all === 1 ? 'cotización' : 'cotizaciones'} · Suma: <span class="dash-total">${fmt(sum)}</span>`;
   }
 
-  function showDash() { renderDash(); document.body.classList.add('view-dash'); window.scrollTo(0, 0); }
-  function showEditor() { document.body.classList.remove('view-dash'); window.scrollTo(0, 0); document.querySelectorAll('.sheet textarea').forEach(autosize); }
+  function showDash() { renderDash(); document.body.classList.add('view-dash'); $('tab-list').classList.add('active'); $('tab-editor').classList.remove('active'); window.scrollTo(0, 0); }
+  function showEditor() { document.body.classList.remove('view-dash'); $('tab-editor').classList.add('active'); $('tab-list').classList.remove('active'); window.scrollTo(0, 0); document.querySelectorAll('.sheet textarea').forEach(autosize); }
+  $('tab-list').addEventListener('click', () => { save(); showDash(); });
+  $('tab-editor').addEventListener('click', showEditor);
 
   $('dash').addEventListener('click', (e) => {
     const b = e.target.closest('[data-open],[data-dup],[data-del]');
@@ -787,7 +824,12 @@
   $('dash-search').addEventListener('input', renderDash);
   $('dash-filter').addEventListener('change', renderDash);
   $('dash-new').addEventListener('click', startNew);
-  $('btn-list').addEventListener('click', () => { save(); showDash(); });
+  $('btn-save').addEventListener('click', () => {
+    const data = snapshot();
+    if (!hasContent(data)) { toast('Escribe al menos el <b>nombre del cliente</b> o una línea para guardar la cotización.'); return; }
+    if (save()) toast(`<b>Guardada.</b> La encuentras en "Mis cotizaciones" (${readList().length}).`);
+    else toast('<b>No se pudo guardar.</b> Este navegador no permite guardar datos (modo privado o vista previa). Abre la página en Safari o Chrome normal.');
+  });
 
   $('dash-export').addEventListener('click', () => {
     const blob = new Blob([JSON.stringify({ exportado: new Date().toISOString(), cotizaciones: readList() }, null, 2)], { type: 'application/json' });
@@ -820,22 +862,17 @@
     if (data && data.fields) {
       fillEditor(data);
     } else {
-      const d = { fields: {}, lines: [], logo: '' };
+      // Primera vez: cotización vacía (no se guarda nada hasta que haya cliente o líneas)
+      const d = { fields: {}, lines: [{}], logo: '' };
       textIds.forEach(id => d.fields[id] = $(id).value);
-      d.fields['inv-no'] = 'CUS-1000848';
+      d.fields['inv-no'] = 'CUS-1000001';
       d.fields['inv-date'] = new Date().toISOString().slice(0, 10);
-      d.fields['cl-name'] = 'Nombre del cliente (ejemplo)';
-      d.fields['cl-addr'] = 'Av. Ceylán No. 850, Col. Industrial Vallejo, Alcaldía Azcapotzalco,\nC.P. 02300, Ciudad de México. contacto@cliente.com.mx (55) 5687 4321';
-      d.fields['svc-title'] = 'Guardia intramuros';
-      d.fields['svc-desc'] = 'Personal de seguridad altamente capacitado para la protección física de instalaciones, con protocolos especializados y tecnología de apoyo integrada.';
-      d.fields['feat-title'] = 'Características principales:';
-      d.fields['feat-list'] = '• Personal especializado\n• Protocolos avanzados\n• Monitoreo 24/7\n• Respuesta rápida';
-      d.fields['extra-title'] = 'Seguridad adaptada a cada industria';
-      d.fields['extra-desc'] = 'Desarrollamos soluciones específicas para cada sector, adaptando nuestra tecnología a los desafíos únicos de su industria.';
-      d.lines = [{ qty: 12, price: 25168, desc: 'Servicio de seguridad intramuros con 12 elementos en turno 12x12, incluyendo equipo básico de operación. El servicio contempla supervisión por central de monitoreo 24/7, supervisión en sitio, reporte mensual de actividades, exámenes toxicológicos al personal, evaluación mensual de desempeño, entrega de uniformes y capacitación básica de los elementos conforme a las necesidades del cliente.' }];
       fillEditor(d);
     }
-    if (readList().length) showDash();
+    updateCount();
+    try { localStorage.setItem('__prueba__', '1'); localStorage.removeItem('__prueba__'); }
+    catch (e) { $('storage-note').textContent = 'Este navegador no permite guardar cotizaciones (modo privado o vista previa).'; }
+    if (readList().length) showDash(); else showEditor();
   }
 
   $('logo-file').addEventListener('change', (e) => {
@@ -1067,7 +1104,20 @@
       }
       const no = (v('inv-no') || 'cotizacion').replace(/[\\/:*?"<>|]+/g, '-');
       const cl = (v('cl-name') || '').replace(/[\\/:*?"<>|]+/g, '-').trim();
-      pdf.save(`Cotizacion ${no}${cl ? ' - ' + cl : ''}.pdf`);
+      const name = `Cotizacion ${no}${cl ? ' - ' + cl : ''}.pdf`;
+      // Entrega del archivo compatible con Safari (macOS e iOS), Chrome, Edge y Firefox
+      const blob = pdf.output('blob');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = name; a.rel = 'noopener'; a.style.display = 'none';
+      document.body.appendChild(a); a.click();
+      setTimeout(() => a.remove(), 1000);
+      // Aviso con enlace de respaldo: si el navegador no inició la descarga, un clic directo del usuario sí la abre
+      const t = document.createElement('div'); t.className = 'toast toast-pdf';
+      t.innerHTML = `<b>PDF listo:</b> ${esc(name)}. Búscalo en Descargas. ¿No se descargó? <a href="${url}" download="${esc(name)}" target="_blank" rel="noopener">Ábrelo aquí</a> <button type="button" aria-label="Cerrar">&#x2715;</button>`;
+      t.querySelector('button').addEventListener('click', () => t.remove());
+      document.body.appendChild(t);
+      setTimeout(() => { t.remove(); URL.revokeObjectURL(url); }, 120000);
     } catch (err) {
       alert('No se pudo generar el PDF. Intenta de nuevo.');
     } finally {
