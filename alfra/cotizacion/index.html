@@ -403,14 +403,11 @@
 
 </head>
 <body>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
 <nav class="tabs" aria-label="Secciones">
   <button class="tab" id="tab-editor" type="button">Cotización</button>
   <button class="tab" id="tab-list" type="button">Mis cotizaciones <span class="count" id="list-count"></span></button>
   <span class="tabs-note" id="storage-note"></span>
-  <span class="ver" title="Versión del cotizador">v2026.09.29</span>
+  <span class="ver" id="ver" title="Versión del cotizador">v2026.10.05</span>
 </nav>
 <div class="toolbar">
   <button class="btn" id="btn-add" type="button">+ Agregar línea</button>
@@ -1081,14 +1078,95 @@
     }, 250);
   }
   window.addEventListener('beforeprint', buildPrint);
+  // ---------- Carga de librerías con servidor de respaldo ----------
+  const LIBS = [
+    { ok: () => !!window.html2canvas, urls: ['https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'] },
+    { ok: () => !!(window.jspdf && window.jspdf.jsPDF), urls: ['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js'] },
+  ];
+  function loadScript(src) {
+    return new Promise((res, rej) => {
+      const el = document.createElement('script'); el.src = src; el.async = true;
+      el.onload = res; el.onerror = () => rej(new Error('No se pudo cargar ' + src));
+      document.head.appendChild(el);
+    });
+  }
+  async function ensurePdfLibs() {
+    for (const lib of LIBS) {
+      if (lib.ok()) continue;
+      let lastErr = null;
+      for (const u of lib.urls) { try { await loadScript(u); if (lib.ok()) break; } catch (e) { lastErr = e; } }
+      if (!lib.ok()) throw lastErr || new Error('Librería no disponible');
+    }
+  }
+  // Precarga silenciosa al abrir la página (si falla, se reintenta al pulsar Descargar PDF)
+  setTimeout(() => { ensurePdfLibs().catch(() => {}); }, 1500);
+
+  // ---------- Errores: siempre un aviso legible, nunca una pantalla en blanco ----------
+  window.addEventListener('error', (e) => { try { toast('<b>Ocurrió un error:</b> ' + esc(e.message || 'desconocido') + '. Recarga la página; si persiste, manda una captura de este aviso.'); } catch (x) {} });
+  window.addEventListener('unhandledrejection', (e) => { try { toast('<b>Ocurrió un error:</b> ' + esc(String(e.reason && e.reason.message || e.reason || 'desconocido')) + '.'); } catch (x) {} });
+
+  // ---------- Aviso de versión nueva (evita quedarse con una copia vieja en caché) ----------
+  async function checkNewVersion() {
+    if (!/^https?:/.test(location.protocol)) return;
+    try {
+      const r = await fetch(location.pathname + '?nocache=' + Date.now(), { cache: 'no-store' });
+      const t = await r.text();
+      const m = t.match(/id="ver"[^>]*>(v[\d.]+)</);
+      if (m && m[1] !== $('ver').textContent.trim()) {
+        const b = document.createElement('div'); b.className = 'toast';
+        b.innerHTML = `<b>Hay una versión nueva del cotizador (${esc(m[1])}).</b> <a href="#" id="reload-new">Recargar ahora</a>`;
+        b.querySelector('a').addEventListener('click', (ev) => { ev.preventDefault(); location.reload(true); });
+        document.body.appendChild(b);
+      }
+    } catch (e) {}
+  }
+  setTimeout(checkNewVersion, 3000);
+
   // ---------- PDF directo (sin ventana de impresión): hojas carta exactas ----------
+  const IS_SAFARI = /safari/i.test(navigator.userAgent) && !/chrome|crios|fxios|android|edg|opr/i.test(navigator.userAgent);
+  const keepAlive = []; // las direcciones blob se conservan mientras la página esté abierta (Safari falla si se liberan)
+
+  function openSafariViewer() {
+    // Debe llamarse de forma síncrona dentro del clic para que Safari permita la pestaña nueva
+    try {
+      const w = window.open('', '_blank');
+      if (!w) return null;
+      w.document.open();
+      w.document.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Generando PDF…</title></head><body style="margin:0;font-family:Arial,sans-serif;background:#E4E7EC;color:#20335F"><p style="padding:40px;font-size:16px">Generando el PDF de la cotización… un momento.</p></body></html>');
+      w.document.close();
+      return w;
+    } catch (e) { return null; }
+  }
+
+  function fillSafariViewer(w, url, name) {
+    const safeName = esc(name);
+    w.document.open();
+    w.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${safeName}</title>
+<style>
+  html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#E4E7EC;color:#20335F}
+  .bar{display:flex;gap:12px;align-items:center;padding:10px 16px;background:#20335F;color:#fff;flex-wrap:wrap}
+  .bar b{flex:1;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar a{background:#A9C944;color:#20335F;font-weight:700;text-decoration:none;padding:9px 16px;border-radius:5px;font-size:14px}
+  .bar small{font-size:12px;opacity:.85}
+  iframe{display:block;width:100%;height:calc(100% - 52px);border:0;background:#fff}
+</style></head><body>
+<div class="bar"><b>${safeName}</b><small>Revisa la vista previa y pulsa el botón para guardarlo en Descargas:</small><a id="dl" href="${url}" download="${safeName}">Guardar PDF</a></div>
+<iframe src="${url}" title="Vista previa del PDF"></iframe>
+</body></html>`);
+    w.document.close();
+  }
+
   async function downloadPdf() {
     const btn = $('btn-pdf');
-    if (!window.html2canvas || !window.jspdf) {
-      alert('No se pudo cargar el generador de PDF. Revisa tu conexión a internet y recarga la página.');
+    const viewer = IS_SAFARI ? openSafariViewer() : null; // síncrono, antes de cualquier espera
+    const label = btn.textContent; btn.textContent = 'Generando PDF…'; btn.classList.add('busy');
+    try { await ensurePdfLibs(); }
+    catch (e) {
+      btn.textContent = label; btn.classList.remove('busy');
+      if (viewer && !viewer.closed) viewer.close();
+      toast('<b>Sin conexión.</b> No se pudo cargar el generador de PDF. Revisa tu internet e inténtalo de nuevo.');
       return;
     }
-    const label = btn.textContent; btn.textContent = 'Generando PDF…'; btn.classList.add('busy');
     const root = $('print-root');
     try {
       save();
@@ -1105,21 +1183,27 @@
       const no = (v('inv-no') || 'cotizacion').replace(/[\\/:*?"<>|]+/g, '-');
       const cl = (v('cl-name') || '').replace(/[\\/:*?"<>|]+/g, '-').trim();
       const name = `Cotizacion ${no}${cl ? ' - ' + cl : ''}.pdf`;
-      // Entrega del archivo compatible con Safari (macOS e iOS), Chrome, Edge y Firefox
+      pdf.setProperties({ title: name.replace(/\.pdf$/, ''), subject: 'Cotización', creator: 'Cotizador' });
       const blob = pdf.output('blob');
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = name; a.rel = 'noopener'; a.style.display = 'none';
-      document.body.appendChild(a); a.click();
-      setTimeout(() => a.remove(), 1000);
-      // Aviso con enlace de respaldo: si el navegador no inició la descarga, un clic directo del usuario sí la abre
-      const t = document.createElement('div'); t.className = 'toast toast-pdf';
-      t.innerHTML = `<b>PDF listo:</b> ${esc(name)}. Búscalo en Descargas. ¿No se descargó? <a href="${url}" download="${esc(name)}" target="_blank" rel="noopener">Ábrelo aquí</a> <button type="button" aria-label="Cerrar">&#x2715;</button>`;
-      t.querySelector('button').addEventListener('click', () => t.remove());
-      document.body.appendChild(t);
-      setTimeout(() => { t.remove(); URL.revokeObjectURL(url); }, 120000);
+      const url = URL.createObjectURL(blob); keepAlive.push(url);
+      if (viewer && !viewer.closed) {
+        // Safari: vista previa + botón "Guardar PDF" en una pestaña nueva (la descarga directa en la misma pestaña falla en Safari)
+        fillSafariViewer(viewer, url, name);
+        toast(`<b>PDF listo.</b> Se abrió en una pestaña nueva; ahí pulsa <b>Guardar PDF</b>.`);
+      } else {
+        const a = document.createElement('a');
+        a.href = url; a.download = name; a.rel = 'noopener'; a.style.display = 'none';
+        document.body.appendChild(a); a.click();
+        setTimeout(() => a.remove(), 1000);
+        const t = document.createElement('div'); t.className = 'toast toast-pdf';
+        t.innerHTML = `<b>PDF listo:</b> ${esc(name)}. Búscalo en Descargas. ¿No se descargó? <a href="${url}" download="${esc(name)}" target="_blank" rel="noopener">Ábrelo aquí</a> <button type="button" aria-label="Cerrar">&#x2715;</button>`;
+        t.querySelector('button').addEventListener('click', () => t.remove());
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 120000);
+      }
     } catch (err) {
-      alert('No se pudo generar el PDF. Intenta de nuevo.');
+      if (viewer && !viewer.closed) viewer.close();
+      toast('<b>No se pudo generar el PDF.</b> ' + esc(String(err && err.message || err)) + ' — inténtalo de nuevo; si persiste, manda una captura de este aviso.');
     } finally {
       root.classList.remove('rendering');
       btn.textContent = label; btn.classList.remove('busy');
